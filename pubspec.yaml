@@ -31,6 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   another_telephony: ^0.4.1
+  flutter_background_service_android: ^6.2.2
   http: ^1.2.0
   flutter_background_service: ^5.0.5
 
